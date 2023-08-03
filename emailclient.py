@@ -1,13 +1,22 @@
-import imaplib, smtplib, email, env, email.message, asyncio, email.utils
+import asyncio
+import email
+import email.message
+import email.utils
+
+import env
+import imaplib
+import smtplib
 from email import policy
+
 from bs4 import BeautifulSoup
 
+
 class ProcessedEmail:
-    def __init__(self, email : email.message.Message, received_by : str):
+    def __init__(self, email: email.message.Message, received_by: str):
         self._process(email)
         self.received_by = received_by
 
-    def _process(self, email : email.message.Message):
+    def _process(self, email: email.message.Message):
         self.sender = email["From"]
         self.receiver = email["To"]
         self.date = email["Date"]
@@ -17,23 +26,22 @@ class ProcessedEmail:
 
         # https://stackoverflow.com/questions/64377425/how-can-i-read-the-mail-body-of-a-mail-with-python
         if email.is_multipart():
-          for part in email.walk():
-              ctype = part.get_content_type()
-              cdispo = str(part.get('Content-Disposition'))
-              # skip any text/plain (txt) attachments
-              if ctype == 'text/plain' and 'attachment' not in cdispo:
-                  self.body = part.get_payload(decode=True)  # decode
-                  break
+            for part in email.walk():
+                ctype = part.get_content_type()
+                cdispo = str(part.get('Content-Disposition'))
+                # skip any text/plain (txt) attachments
+                if ctype == 'text/plain' and 'attachment' not in cdispo:
+                    self.body = part.get_payload(decode=True)  # decode
+                    break
         # not multipart - i.e. plain text, no attachments, keeping fingers crossed
         else:
             self.body = email.get_payload(decode=True)
 
         if isinstance(self.body, bytes):
-            self.body = self.body.decode('utf-8');
+            self.body = self.body.decode('utf-8')
 
         soup = BeautifulSoup(self.body, features="html.parser")
-        self.body = soup.get_text(separator='\n')  
-
+        self.body = soup.get_text(separator='\n')
 
 
 async def get_new_emails() -> list[tuple[env.RegisteredEmail, ProcessedEmail]]:
@@ -43,10 +51,11 @@ async def get_new_emails() -> list[tuple[env.RegisteredEmail, ProcessedEmail]]:
         fetched_emails = await asyncio.to_thread(_fetch_emails_sync, x)
         for y in fetched_emails:
             emails.append((x, y))
-    
+
     return emails
 
-def _fetch_emails_sync(creds : env.RegisteredEmail) -> list[ProcessedEmail]:
+
+def _fetch_emails_sync(creds: env.RegisteredEmail) -> list[ProcessedEmail]:
     mail = imaplib.IMAP4_SSL(creds.email_host, creds.imap_port)
     rc, resp = mail.login(creds.email_user, creds.email_pass)
 
@@ -57,17 +66,24 @@ def _fetch_emails_sync(creds : env.RegisteredEmail) -> list[ProcessedEmail]:
 
     for num in data[0].split():
         # get a single message and parse it by policy.SMTP (RFC compliant)
-        status, data = mail.fetch(num, '(RFC822)')
-        email_msg = data[0][1]
+        status, email_data = mail.fetch(num, '(RFC822)')
+        content: tuple | bytes | None = email_data[0]
+        if isinstance(content, tuple):
+            email_msg = content[1]
+        elif isinstance(content, bytes):
+            email_msg = content
+        else:
+            continue
         email_msg = email.message_from_bytes(email_msg, policy=policy.SMTP)
         emails.append(ProcessedEmail(email_msg, creds.email_user))
-    
+
     mail.close()
     mail.logout()
 
     return emails
 
-async def reply_to_email(reply_to : ProcessedEmail, subject : str, body : str):
+
+async def reply_to_email(reply_to: ProcessedEmail, subject: str, body: str):
     # Find associated email
     creds = None
     for x in env.REGISTERED_EMAILS:
@@ -75,13 +91,13 @@ async def reply_to_email(reply_to : ProcessedEmail, subject : str, body : str):
             creds = x
             break
 
-    if creds == None:
+    if creds is None:
         raise Exception("Receiver's credentials are not present")
-    
+
     await asyncio.to_thread(_send_reply_sync, creds, reply_to, subject, body)
 
 
-def _send_reply_sync(creds : env.RegisteredEmail, reply_to : ProcessedEmail, subject : str, body : str):
+def _send_reply_sync(creds: env.RegisteredEmail, reply_to: ProcessedEmail, subject: str, body: str):
     body = body + f"\n\n\nOn {reply_to.date}, {reply_to.sender} wrote:\n{reply_to.body}"
 
     message = email.message.EmailMessage()
