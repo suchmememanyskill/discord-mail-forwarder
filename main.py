@@ -6,6 +6,7 @@ from discord.ext import commands
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
+logger = logging.getLogger('discord.bot')
 
 bot = commands.Bot(command_prefix='?', description="Bot to forward emails", intents=intents)
 
@@ -30,7 +31,7 @@ class ReplyEmail(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
         await emailclient.reply_to_email(self.email, self.subject.value, self.body.value)
-        print(f"Replied to email: {self.subject.value}")
+        logger.info(f"Replied to email: {self.subject.value}")
 
         embed = discord.Embed(title=self.subject.value, description=self.body.value, colour=discord.Colour.blue())
         embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
@@ -70,7 +71,7 @@ async def loop():
                 if channel == None:
                     channel = await bot.fetch_channel()
                 
-                print(f"Received email ({creds.email_user}): {email.subject}")
+                logger.info(f"Received email ({creds.email_user}): {email.subject}")
 
                 embed = discord.Embed(title=f"{email.subject}", description=email.body, colour=discord.Colour.green())
                 embed.set_author(name=f"From: {email.sender}")
@@ -81,15 +82,15 @@ async def loop():
                     await channel.send("New email received", embed=embed)
 
         except Exception as e:
-            print(f"Exception: {str(e)}")
+            logger.error(str(e))
         
         await asyncio.sleep(60)
 
 
 @bot.event
 async def on_ready():
-    print(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    print('------')
+    logger.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
+    logger.info('------')
     asyncio.create_task(loop())
 
-bot.run(env.BOT_TOKEN, log_level=logging.DEBUG)
+bot.run(env.BOT_TOKEN)
