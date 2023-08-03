@@ -1,4 +1,4 @@
-import env, emailclient, asyncio, traceback
+import env, emailclient, asyncio, traceback, logging
 
 import discord
 from discord.ext import commands
@@ -92,4 +92,4 @@ async def on_ready():
     print('------')
     asyncio.create_task(loop())
 
-bot.run(env.BOT_TOKEN)
+bot.run(env.BOT_TOKEN, log_level=logging.DEBUG)
