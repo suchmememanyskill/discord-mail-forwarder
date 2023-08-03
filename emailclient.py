@@ -29,7 +29,7 @@ class ProcessedEmail:
             self.body = email.get_payload(decode=True)
 
         if isinstance(self.body, bytes):
-            self.body = self.body.decode('utf-8');
+            self.body = self.body.decode('utf-8')
 
         soup = BeautifulSoup(self.body, features="html.parser")
         self.body = soup.get_text(separator='\n')  
