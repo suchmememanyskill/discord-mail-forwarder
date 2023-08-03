@@ -46,7 +46,7 @@ class ProcessedEmail:
             self.body = self.body.decode('utf-8')
 
         soup = BeautifulSoup(self.body, features="html.parser")
-        self.body = re.sub(r'\n\s*\n', r'\n\n', soup.get_text(separator='\n').strip(), flags=re.M)
+        self.body = re.sub(r'\n\s*\n', r'\n\n', soup.get_text(separator='\n').replace("\r\n", "\n").strip(), flags=re.M)
 
 async def get_new_emails() -> list[tuple[env.RegisteredEmail, ProcessedEmail]]:
     emails = []
