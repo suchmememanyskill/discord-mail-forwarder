@@ -28,7 +28,7 @@ version: '3'
 
 services:
   email-listener:
-    image: TODO
+    image: ghcr.io/suchmememanyskill/discord-mail-forwarder:latest
     restart: unless-stopped
     container_name: email-listener
     environment:
