@@ -14,16 +14,30 @@ class ProcessedEmail:
         self.subject = email["Subject"]
         self.references = email["References"] or ""
         self.message_id = email["Message-Id"]
+        self.body = None
 
         # https://stackoverflow.com/questions/64377425/how-can-i-read-the-mail-body-of-a-mail-with-python
         if email.is_multipart():
-          for part in email.walk():
-              ctype = part.get_content_type()
-              cdispo = str(part.get('Content-Disposition'))
-              # skip any text/plain (txt) attachments
-              if ctype == 'text/plain' and 'attachment' not in cdispo:
-                  self.body = part.get_payload(decode=True)  # decode
-                  break
+            for part in email.walk():
+                ctype = part.get_content_type()
+                cdispo = str(part.get('Content-Disposition'))
+                # skip any text/plain (txt) attachments
+                if ctype == 'text/plain' and 'attachment' not in cdispo:
+                    self.body = part.get_payload(decode=True)  # decode
+                    break
+            
+            if self.body == None:
+                for part in email.walk():
+                    ctype = part.get_content_type()
+                    cdispo = str(part.get('Content-Disposition'))
+                    # skip any text/plain (txt) attachments
+                    if ctype == 'text/html' and 'attachment' not in cdispo:
+                        self.body = part.get_payload(decode=True)  # decode
+                        break           
+
+            if self.body == None:
+                self.body = "(No Content)" 
+                  
         # not multipart - i.e. plain text, no attachments, keeping fingers crossed
         else:
             self.body = email.get_payload(decode=True)
