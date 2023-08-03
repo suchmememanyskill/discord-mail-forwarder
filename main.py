@@ -98,9 +98,8 @@ async def loop():
                 else:
                     await channel.send(f"New email received ({creds.email_user})", embed=embed)
 
-        except Exception as e:
-            logger.error(str(e))
-
+        except Exception:
+            logger.error(None, exc_info=True)
         await asyncio.sleep(60)
 
 
