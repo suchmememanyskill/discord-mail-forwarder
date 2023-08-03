@@ -1,6 +1,6 @@
 import os
 
-BOT_TOKEN = os.environ["TOKEN"]
+BOT_TOKEN = os.getenv("BOT_TOKEN", os.getenv("TOKEN"))
 
 class RegisteredEmail:
     def __init__(self, email_host : str, email_user : str, email_pass : str, discord_channel_id : int, smtp_port : int = 587, imap_port : int = 993, allow_replies : int = 1):

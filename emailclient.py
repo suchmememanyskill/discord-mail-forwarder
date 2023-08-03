@@ -82,7 +82,7 @@ async def reply_to_email(reply_to : ProcessedEmail, subject : str, body : str):
 
 
 def _send_reply_sync(creds : env.RegisteredEmail, reply_to : ProcessedEmail, subject : str, body : str):
-    body = body + f"\n\n\nOn {reply_to.date}, {reply_to.sender} wrote\n{reply_to.body}"
+    body = body + f"\n\n\nOn {reply_to.date}, {reply_to.sender} wrote:\n{reply_to.body}"
 
     message = email.message.EmailMessage()
     message.set_content(body)

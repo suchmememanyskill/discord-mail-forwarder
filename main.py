@@ -30,7 +30,12 @@ class ReplyEmail(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
         await emailclient.reply_to_email(self.email, self.subject.value, self.body.value)
-        await interaction.followup.send(f"{interaction.user.display_name} successfully sent a reply")
+        print(f"Replied to email: {self.subject.value}")
+
+        embed = discord.Embed(title=self.subject.value, description=self.body.value, colour=discord.Colour.blue())
+        embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
+
+        await interaction.followup.send(f"Reply Sent!", embed=embed)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         await interaction.response.send_message('Oops! Something went wrong.', ephemeral=True)
@@ -43,9 +48,6 @@ class ReplyButton(discord.ui.View):
         super().__init__(timeout=999999999999)
         self.email = email
 
-    # When the confirm button is pressed, set the inner value to `True` and
-    # stop the View from listening to more input.
-    # We also send the user an ephemeral message that we're confirming their choice.
     @discord.ui.button(label='Reply', style=discord.ButtonStyle.gray, emoji="✉️")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = ReplyEmail(self.email)
@@ -60,13 +62,23 @@ async def loop():
             emails = await emailclient.get_new_emails()
             
             for x in emails:
-                channel = await bot.fetch_channel(x[0].discord_channel_id)
+                creds = x[0]
                 email = x[1]
 
-                embed = discord.Embed(title=email.subject, description=email.body)
-                embed.set_author(name=email.sender)
+                channel = bot.get_channel(creds.discord_channel_id)
 
-                await channel.send(embed=embed, view=ReplyButton(email))
+                if channel == None:
+                    channel = await bot.fetch_channel()
+                
+                print(f"Received email ({creds.email_user}): {email.subject}")
+
+                embed = discord.Embed(title=f"{email.subject}", description=email.body, colour=discord.Colour.green())
+                embed.set_author(name=f"From: {email.sender}")
+
+                if (creds.allow_replies):
+                    await channel.send("New email received", embed=embed, view=ReplyButton(email))
+                else:
+                    await channel.send("New email received", embed=embed)
 
         except Exception as e:
             print(f"Exception: {str(e)}")
