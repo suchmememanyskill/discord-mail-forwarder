@@ -51,9 +51,10 @@ class ReplyEmail(discord.ui.Modal):
 
 
 class ReplyButton(discord.ui.View):
-    def __init__(self, email: emailclient.ProcessedEmail):
-        super().__init__(timeout=999999999999)
+    def __init__(self, email: emailclient.ProcessedEmail, allowed_replier: discord.Role | None):
+        super().__init__(timeout=None)
         self.email = email
+        self.allowed_replier = allowed_replier
 
     @discord.ui.button(label='Reply', style=discord.ButtonStyle.gray, emoji="✉️")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -61,6 +62,12 @@ class ReplyButton(discord.ui.View):
         await interaction.response.send_modal(modal)
         await modal.wait()
         self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if self.allowed_replier and self.allowed_replier not in interaction.user.roles:
+            await interaction.response.send_message("You are not allowed to reply with this email.", ephemeral=True)
+            return False
+        return True
 
 
 async def loop():
@@ -74,17 +81,20 @@ async def loop():
                 email = x[1]
 
                 channel = bot.get_channel(creds.discord_channel_id)
+                allowed_replier = None
 
                 if channel is None:
                     channel = await bot.fetch_channel(creds.discord_channel_id)
+
+                if creds.allowed_replier:
+                    allowed_replier = channel.guild.get_role(creds.allowed_replier)
 
                 logger.info(f"Received email ({creds.email_user}): {email.subject}")
 
                 embed = discord.Embed(title=f"{email.subject}", description=email.body, colour=discord.Colour.green())
                 embed.set_author(name=f"From: {email.sender}")
-
-                if (creds.allow_replies):
-                    await channel.send(f"New email received ({creds.email_user})", embed=embed, view=ReplyButton(email))
+                if creds.allow_replies:
+                    await channel.send(f"New email received ({creds.email_user})", embed=embed, view=ReplyButton(email, allowed_replier), files=email.attachments)
                 else:
                     await channel.send(f"New email received ({creds.email_user})", embed=embed)
 

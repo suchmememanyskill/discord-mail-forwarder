@@ -1,18 +1,33 @@
 import asyncio
+import base64
 import email
 import email.message
 import email.utils
+import io
+import re
+
 
 import env
 import imaplib
 import smtplib
-from email import policy
 
+from discord import File
+from email import policy
 from bs4 import BeautifulSoup
 
 
 class ProcessedEmail:
+    attachment: list
+    sender: str
+    receiver: str
+    date: str
+    subject: str
+    references: str
+    message_id: str
+
     def __init__(self, email: email.message.Message, received_by: str):
+        self.attachments = []
+        self.body = ''
         self._process(email)
         self.received_by = received_by
 
@@ -30,9 +45,12 @@ class ProcessedEmail:
                 ctype = part.get_content_type()
                 cdispo = str(part.get('Content-Disposition'))
                 # skip any text/plain (txt) attachments
-                if ctype == 'text/plain' and 'attachment' not in cdispo:
+                if ctype == 'text/plain':
                     self.body = part.get_payload(decode=True)  # decode
-                    break
+                elif cdispo is not None and cdispo.startswith('attachment') and ctype in ['image/jpeg', 'image/png']:
+                    img_bytes = base64.b64decode(part.get_payload())
+                    buffer = io.BytesIO(img_bytes)
+                    self.attachments.append(File(fp=buffer, filename=part.get_filename()))
         # not multipart - i.e. plain text, no attachments, keeping fingers crossed
         else:
             self.body = email.get_payload(decode=True)
@@ -40,8 +58,11 @@ class ProcessedEmail:
         if isinstance(self.body, bytes):
             self.body = self.body.decode('utf-8')
 
-        soup = BeautifulSoup(self.body, features="html.parser")
-        self.body = soup.get_text(separator='\n')
+        if self.body:
+            soup = BeautifulSoup(self.body, features="html.parser")
+            self.body = soup.get_text(separator='\n')
+            # Try to remove replies, should work for gmail at least, this is just an unwinnable battle
+            self.body = re.sub(r'>?On.* wrote:\n+>[\s\S]*', '', self.body)
 
 
 async def get_new_emails() -> list[tuple[env.RegisteredEmail, ProcessedEmail]]:
