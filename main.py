@@ -77,9 +77,9 @@ async def loop():
                 embed.set_author(name=f"From: {email.sender}")
 
                 if (creds.allow_replies):
-                    await channel.send("New email received", embed=embed, view=ReplyButton(email))
+                    await channel.send(f"New email received ({creds.email_user})", embed=embed, view=ReplyButton(email))
                 else:
-                    await channel.send("New email received", embed=embed)
+                    await channel.send(f"New email received ({creds.email_user})", embed=embed)
 
         except Exception as e:
             logger.error(str(e))
