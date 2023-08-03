@@ -67,7 +67,7 @@ async def loop():
                 
                 logger.info(f"Received email ({creds.email_user}): {email.subject}")
 
-                embed = discord.Embed(title=f"{email.subject}", description=email.body, colour=discord.Colour.green())
+                embed = discord.Embed(title=f"{email.subject}", description=email.body[0:4000], colour=discord.Colour.green())
                 embed.set_author(name=f"From: {email.sender}")
 
                 if (creds.discord_channel_webhook != None):
