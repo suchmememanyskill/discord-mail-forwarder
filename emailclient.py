@@ -1,4 +1,4 @@
-import imaplib, smtplib, email, env, email.message, asyncio, email.utils
+import imaplib, smtplib, email, env, email.message, asyncio, email.utils, re
 from email import policy
 from bs4 import BeautifulSoup
 
@@ -46,9 +46,7 @@ class ProcessedEmail:
             self.body = self.body.decode('utf-8')
 
         soup = BeautifulSoup(self.body, features="html.parser")
-        self.body = soup.get_text(separator='\n')  
-
-
+        self.body = re.sub(r'\n\s*\n', r'\n\n', soup.get_text(separator='\n').strip(), flags=re.M)
 
 async def get_new_emails() -> list[tuple[env.RegisteredEmail, ProcessedEmail]]:
     emails = []
