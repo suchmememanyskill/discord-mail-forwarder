@@ -46,8 +46,8 @@ services:
       - DISCORD_CHANNEL_ID.2=1001843557109346365
       - ALLOW_REPLIES.2=0
       # Email Account 3. Will send messages as a webhook
-      - EMAIL_HOST.2=mail.server.com
-      - EMAIL_USER.2=torchic@server.com
-      - EMAIL_PASS.2=my_very_secure_password_3
-      - DISCORD_CHANNEL_WEBHOOK.2=https://discord.com/api/webhooks/0/0
-      - ALLOW_REPLIES.2=0
+      - EMAIL_HOST.3=mail.server.com
+      - EMAIL_USER.3=torchic@server.com
+      - EMAIL_PASS.3=my_very_secure_password_3
+      - DISCORD_CHANNEL_WEBHOOK.3=https://discord.com/api/webhooks/0/0
+      - ALLOW_REPLIES.3=0
