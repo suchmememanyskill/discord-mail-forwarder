@@ -6,7 +6,6 @@ import email.utils
 import io
 import re
 
-
 import env
 import imaplib
 import smtplib
@@ -51,15 +50,15 @@ class ProcessedEmail:
                     img_bytes = base64.b64decode(part.get_payload())
                     buffer = io.BytesIO(img_bytes)
                     self.attachments.append(File(fp=buffer, filename=part.get_filename()))
-            
+
             if self.body == '':
                 for part in email.walk():
-                  ctype = part.get_content_type()
-                  cdispo = str(part.get('Content-Disposition'))
-                  # skip any text/html (html) attachments
-                  if ctype == 'text/html' and 'attachment' not in cdispo:
-                      self.body = part.get_payload(decode=True)  # decode
-                      break      
+                    ctype = part.get_content_type()
+                    cdispo = str(part.get('Content-Disposition'))
+                    # skip any text/html (html) attachments
+                    if ctype == 'text/html' and 'attachment' not in cdispo:
+                        self.body = part.get_payload(decode=True)  # decode
+                        break
 
             if self.body == '':
                 self.body = "(No Content)"

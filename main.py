@@ -15,6 +15,7 @@ logger = logging.getLogger('discord.bot')
 bot = commands.Bot(command_prefix='?', description="Bot to forward emails", intents=intents)
 is_bot = False
 
+
 class ReplyEmail(discord.ui.Modal):
     def __init__(self, email: emailclient.ProcessedEmail):
         self.subject.default = "Re: " + email.subject
@@ -85,7 +86,7 @@ async def loop():
                 embed = discord.Embed(title=f"{email.subject}", description=email.body[0:4000], colour=discord.Colour.green())
                 embed.set_author(name=f"From: {email.sender}")
 
-                if (creds.discord_channel_webhook != None):
+                if creds.discord_channel_webhook is not None:
                     async with aiohttp.ClientSession() as session:
                         webhook = discord.Webhook.from_url(creds.discord_channel_webhook, session=session)
                         await webhook.send(f"New email received ({creds.email_user})", embed=embed, files=email.attachments)
@@ -108,7 +109,7 @@ async def loop():
 
         except Exception:
             logger.error(None, exc_info=True)
-            
+
         await asyncio.sleep(60)
 
 
@@ -119,7 +120,7 @@ async def on_ready():
     asyncio.create_task(loop())
 
 
-if env.BOT_TOKEN == None or env.BOT_TOKEN == "":
+if env.BOT_TOKEN is None or env.BOT_TOKEN == "":
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     logger.warning("Bot token is nothing. Can only execute webhooks")
     asyncio.run(loop())

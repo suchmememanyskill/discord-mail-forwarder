@@ -9,7 +9,7 @@ class RegisteredEmail:
         self.email_host = email_host
         self.email_user = email_user
         self.email_pass = email_pass
-        
+
         # Optional
         self.discord_channel_webhook = discord_channel_webhook
         self.discord_channel_id = int(discord_channel_id) if discord_channel_id else None
