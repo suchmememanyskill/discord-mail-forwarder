@@ -12,7 +12,7 @@ import aiohttp
 intents = discord.Intents.none()
 logger = logging.getLogger('discord.bot')
 
-bot = commands.Bot(command_prefix='?', description="Bot to forward emails", intents=intents)
+bot = discord.Client(intents=intents)
 is_bot = False
 
 
