@@ -1,0 +1,27 @@
+name: publish
+permissions:
+  packages: write
+  contents: read
+  
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-docker-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up docker
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build the docker image
+      run: |
+        docker build . --tag ghcr.io/suchmememanyskill/discord-mail-forwarder:$GITHUB_REF_NAME
+        docker push ghcr.io/suchmememanyskill/discord-mail-forwarder:$GITHUB_REF_NAME

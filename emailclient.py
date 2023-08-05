@@ -51,6 +51,19 @@ class ProcessedEmail:
                     img_bytes = base64.b64decode(part.get_payload())
                     buffer = io.BytesIO(img_bytes)
                     self.attachments.append(File(fp=buffer, filename=part.get_filename()))
+            
+            if self.body == '':
+                for part in email.walk():
+                  ctype = part.get_content_type()
+                  cdispo = str(part.get('Content-Disposition'))
+                  # skip any text/html (html) attachments
+                  if ctype == 'text/html' and 'attachment' not in cdispo:
+                      self.body = part.get_payload(decode=True)  # decode
+                      break      
+
+            if self.body == '':
+                self.body = "(No Content)"
+
         # not multipart - i.e. plain text, no attachments, keeping fingers crossed
         else:
             self.body = email.get_payload(decode=True)
@@ -60,7 +73,10 @@ class ProcessedEmail:
 
         if self.body:
             soup = BeautifulSoup(self.body, features="html.parser")
-            self.body = soup.get_text(separator='\n')
+            # Remove HTML tags from body
+            self.body = soup.get_text(separator='\n').replace("\r\n", "\n").strip()
+            # Remove extra newlines
+            self.body = re.sub(r'\n\s*\n', r'\n\n', self.body, flags=re.M)
             # Try to remove replies, should work for gmail at least, this is just an unwinnable battle
             self.body = re.sub(r'>?On.* wrote:\n+>[\s\S]*', '', self.body)
 

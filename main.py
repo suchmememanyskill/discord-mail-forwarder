@@ -6,14 +6,14 @@ import emailclient
 import env
 import logging
 import traceback
+import sys
+import aiohttp
 
-intents = discord.Intents.default()
-intents.members = True
-intents.message_content = True
+intents = discord.Intents.none()
 logger = logging.getLogger('discord.bot')
 
 bot = commands.Bot(command_prefix='?', description="Bot to forward emails", intents=intents)
-
+is_bot = False
 
 class ReplyEmail(discord.ui.Modal):
     def __init__(self, email: emailclient.ProcessedEmail):
@@ -80,26 +80,35 @@ async def loop():
                 creds = x[0]
                 email = x[1]
 
-                channel = bot.get_channel(creds.discord_channel_id)
-                allowed_replier = None
-
-                if channel is None:
-                    channel = await bot.fetch_channel(creds.discord_channel_id)
-
-                if creds.allowed_replier:
-                    allowed_replier = channel.guild.get_role(creds.allowed_replier)
-
                 logger.info(f"Received email ({creds.email_user}): {email.subject}")
 
-                embed = discord.Embed(title=f"{email.subject}", description=email.body, colour=discord.Colour.green())
+                embed = discord.Embed(title=f"{email.subject}", description=email.body[0:4000], colour=discord.Colour.green())
                 embed.set_author(name=f"From: {email.sender}")
-                if creds.allow_replies:
-                    await channel.send(f"New email received ({creds.email_user})", embed=embed, view=ReplyButton(email, allowed_replier), files=email.attachments)
-                else:
-                    await channel.send(f"New email received ({creds.email_user})", embed=embed)
+
+                if (creds.discord_channel_webhook != None):
+                    async with aiohttp.ClientSession() as session:
+                        webhook = discord.Webhook.from_url(creds.discord_channel_webhook, session=session)
+                        await webhook.send(f"New email received ({creds.email_user})", embed=embed, files=email.attachments)
+
+                if is_bot and creds.discord_channel_id:
+                    channel = bot.get_channel(creds.discord_channel_id)
+                    allowed_replier = None
+                    view = None
+
+                    if channel is None:
+                        channel = await bot.fetch_channel(creds.discord_channel_id)
+
+                    if creds.allowed_replier:
+                        allowed_replier = channel.guild.get_role(creds.allowed_replier)
+
+                    if creds.allow_replies:
+                        view = ReplyButton(email, allowed_replier)
+
+                    await channel.send(f"New email received ({creds.email_user})", embed=embed, view=view, files=email.attachments)
 
         except Exception:
             logger.error(None, exc_info=True)
+            
         await asyncio.sleep(60)
 
 
@@ -110,4 +119,10 @@ async def on_ready():
     asyncio.create_task(loop())
 
 
-bot.run(env.BOT_TOKEN)
+if env.BOT_TOKEN == None or env.BOT_TOKEN == "":
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    logger.warning("Bot token is nothing. Can only execute webhooks")
+    asyncio.run(loop())
+else:
+    is_bot = True
+    bot.run(env.BOT_TOKEN)
