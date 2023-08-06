@@ -92,7 +92,7 @@ async def get_new_emails() -> list[tuple[env.RegisteredEmail, ProcessedEmail]]:
 
 
 def _fetch_emails_sync(creds: env.RegisteredEmail) -> list[ProcessedEmail]:
-    mail = imaplib.IMAP4_SSL(creds.email_host, creds.imap_port)
+    mail = imaplib.IMAP4_SSL(creds.imap_host, creds.imap_port)
     rc, resp = mail.login(creds.email_user, creds.email_pass)
 
     mail.select('Inbox')
@@ -147,7 +147,7 @@ def _send_reply_sync(creds: env.RegisteredEmail, reply_to: ProcessedEmail, subje
     message["References"] = reply_to.references + " " + reply_to.message_id
     message["Date"] = email.utils.formatdate(localtime=True)
 
-    mail = smtplib.SMTP(creds.email_host, creds.smtp_port)
+    mail = smtplib.SMTP(creds.smtp_host, creds.smtp_port)
     mail.starttls()
     mail.login(creds.email_user, creds.email_pass, initial_response_ok=True)
     mail.send_message(message, creds.email_user, reply_to.sender)
