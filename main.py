@@ -10,6 +10,7 @@ import sys
 import aiohttp
 
 intents = discord.Intents.none()
+intents.guilds = True
 logger = logging.getLogger('discord.bot')
 
 bot = discord.Client(intents=intents)
@@ -68,6 +69,7 @@ class ReplyButton(discord.ui.View):
         if self.allowed_replier and self.allowed_replier not in interaction.user.roles:
             await interaction.response.send_message("You are not allowed to reply with this email.", ephemeral=True)
             return False
+        
         return True
 
 
@@ -101,6 +103,11 @@ async def loop():
 
                     if creds.allowed_replier:
                         allowed_replier = channel.guild.get_role(creds.allowed_replier)
+                        if allowed_replier is None:
+                            await channel.guild.fetch_roles()
+                            allowed_replier = channel.guild.get_role(creds.allowed_replier)
+                            if allowed_replier is None:
+                                logger.warning(f"Role {creds.allowed_replier} was not found in the server")
 
                     if creds.allow_replies:
                         view = ReplyButton(email, allowed_replier)
