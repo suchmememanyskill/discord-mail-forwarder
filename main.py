@@ -67,7 +67,7 @@ class ReplyButton(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if self.allowed_replier and self.allowed_replier not in interaction.user.roles:
-            await interaction.response.send_message("You are not allowed to reply with this email.", ephemeral=True)
+            await interaction.response.send_message("You are not allowed to reply to this email.", ephemeral=True)
             return False
         
         return True
