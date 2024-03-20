@@ -5,6 +5,7 @@ import email.message
 import email.utils
 import io
 import re
+import logging
 
 import env
 import imaplib
@@ -13,6 +14,8 @@ import smtplib
 from discord import File
 from email import policy
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger('discord.bot')
 
 
 class ProcessedEmail:
@@ -110,8 +113,12 @@ def _fetch_emails_sync(creds: env.RegisteredEmail) -> list[ProcessedEmail]:
             email_msg = content
         else:
             continue
-        email_msg = email.message_from_bytes(email_msg, policy=policy.SMTP)
-        emails.append(ProcessedEmail(email_msg, creds.email_user))
+
+        try:
+            email_msg = email.message_from_bytes(email_msg, policy=policy.SMTP)
+            emails.append(ProcessedEmail(email_msg, creds.email_user))
+        except Exception as e:
+            logger.error(f"Error parsing email: {e}")
 
     mail.close()
     mail.logout()
